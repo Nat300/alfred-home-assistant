@@ -1,6 +1,4 @@
 import datetime as dt
-from enum import Enum
-from typing import Literal
 
 class Alarm:
 
@@ -41,9 +39,19 @@ class Alarm:
             candidate_weekday = candidate_trigger.weekday()
 
             if current_weekday not in self.recurence or candidate_trigger < now:
-                days_until_next_recurence = min((day - current_weekday) % 7 for day in self.recurence) 
-                self.next_trigger_dt =  candidate_trigger + dt.timedelta(days=days_until_next_recurence)
-            elif candidate_trigger > now and candidate_weekday in self.recurence:
+                day_deltas = [((day - current_weekday) % 7 or 7) for day in self.recurence]
+                print(f"Day deltas for {self} are {day_deltas}")
+                days_until_next_recurence = min(day_deltas) # "or 7" cancels the "0" output from the modulo
+                self.next_trigger_dt = candidate_trigger + dt.timedelta(days=days_until_next_recurence)
+            elif candidate_trigger >= now and candidate_weekday in self.recurence:
                 self.next_trigger_dt = candidate_trigger
-            
-    
+        
+        print(f"Next trigger datetime for {self} is {self.next_trigger_dt}")
+
+    def trigger(self):
+        # Placeholder for actual alarm triggering logic (e.g., sound, notification)
+        print(f"Alarm triggered: {self}")
+        if self.recurence == set():
+            self.is_active = False
+        else:
+            self.compute_next_trigger_dt()    
