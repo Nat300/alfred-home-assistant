@@ -17,18 +17,17 @@ Alfred is in early development. Features are being rolled out in phases.
 
 ---
 
-## ✨ Features
+## Features
 
 ### Phase 1 — Alarm Management
 - Set, edit, and delete alarms
 - Recurring alarms (daily, weekdays, weekends, custom)
 - Alarm labels and snooze support
-- Simple CLI or interface to manage your schedule
 
 ### Phase 2 — Weather Forecast *(coming soon)*
 - Morning briefing with today's forecast
 - Alerts for rain, extreme temperatures, or notable conditions
-- Integration with a weather API (e.g. OpenWeatherMap)
+- Integration with a weather API
 
 ### Phase 3 — Smart Lights *(coming soon)*
 - Turn bedroom lights on/off
@@ -44,8 +43,6 @@ Alfred is in early development. Features are being rolled out in phases.
 ## 🛠️ Getting Started
 
 ### Prerequisites
-
-> *(Update this section once your stack is confirmed)*
 
 ```bash
 # Example for Python
