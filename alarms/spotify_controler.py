@@ -1,0 +1,77 @@
+import spotipy,os
+from spotipy.oauth2 import SpotifyOAuth
+from dotenv import load_dotenv
+
+load_dotenv()
+
+class SpotifyController:
+    def __init__(self):
+        client_id = os.getenv("client_id")
+        client_secret = os.getenv("client_secret")
+        redirect_uri = os.getenv("redirect_uri")
+        print(client_id, client_secret, redirect_uri)
+        self.sp = spotipy.Spotify(
+            auth_manager=SpotifyOAuth(
+                client_id=client_id,
+                client_secret=client_secret,
+                redirect_uri=redirect_uri,
+                scope="user-read-playback-state user-library-read playlist-read-private streaming user-modify-playback-state"
+            )
+        )
+
+    def play(self, artist=None, track=None, playlist=None):
+        try:
+            if playlist:
+                playlist_uri = self.get_library_playlist(playlist)
+                if not playlist_uri:
+                    playlist_uri = self.sp.search(q=f"playlist:{playlist}", type="playlist", limit=1)["playlists"]["items"][0]["uri"]
+                self.play_playlist(playlist_uri)
+            elif track:
+                track_uri = self.sp.search(q=f"track:{track} artist:{artist}" if artist else f"track:{track}", type="track", limit=1)["tracks"]["items"][0]["uri"]
+                self.play_track(track_uri)
+            elif artist:
+                artist_uri = self.sp.search(q=f"artist:{artist}", type="artist", limit=1)["artists"]["items"][0]["uri"]
+                self.play_artist(artist_uri)
+            else:
+                self.sp.start_playback()
+              
+        except spotipy.SpotifyException as e:
+            return "ERREUR,",e
+    
+    def pause(self):
+        try:    
+            self.sp.pause_playback()
+        except spotipy.SpotifyException as e:
+            return "ERREUR,",e
+
+    def play_track(self, track_uri):
+        self.sp.start_playback(uris=[track_uri])
+
+    def play_playlist(self, playlist_uri):
+        self.sp.start_playback(context_uri=playlist_uri)
+
+    def play_artist(self, artist_uri):
+        self.sp.start_playback(context_uri=artist_uri)
+
+    def play_album(self, album_uri):
+        self.sp.start_playback(context_uri=album_uri)
+
+    def set_device_active(self):
+        devices = self.sp.devices()
+        if devices["devices"]:
+            device_id = devices["devices"][0]["id"]
+            self.sp.transfer_playback(device_id=device_id, force_play=False)
+
+    def set_repeat(self, state="track"):
+        self.sp.repeat(state)
+
+    def set_shuffle(self, state=True):
+        self.sp.shuffle(state)
+
+    def get_library_playlist(self, name):
+        playlists = self.sp.current_user_playlists()
+        for playlist in playlists['items']:
+            if playlist['name'].lower() == name.lower():
+                return playlist['uri']
+        return None
+    

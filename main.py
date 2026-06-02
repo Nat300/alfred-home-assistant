@@ -4,7 +4,7 @@ from time import sleep
 
 alarm_manager = AlarmManager()
 
-alarm_manager.create_alarm(waking_time = time(hour=17,minute=30), sunrise_duration = 30, recurence = {5,6}, is_active = True)
+alarm_manager.create_alarm(waking_time = time(hour=8,minute=10))
 
 while True:
     alarm_manager.check_alarms()
