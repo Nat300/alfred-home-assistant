@@ -1,4 +1,4 @@
-import spotipy,os
+import spotipy,os,time
 from spotipy.oauth2 import SpotifyOAuth
 from dotenv import load_dotenv
 
@@ -19,7 +19,10 @@ class SpotifyController:
             )
         )
 
-    def play(self, artist=None, track=None, playlist=None):
+    def play(self, artist=None, track=None, playlist=None, device_name=None):
+        if device_name:
+                self.set_device_active(device_name)
+
         try:
             if playlist:
                 playlist_uri = self.get_library_playlist(playlist)
@@ -56,12 +59,17 @@ class SpotifyController:
     def play_album(self, album_uri):
         self.sp.start_playback(context_uri=album_uri)
 
-    def set_device_active(self):
+    def set_device_active(self, device_name=None):
         devices = self.sp.devices()
         if devices["devices"]:
-            device_id = devices["devices"][0]["id"]
-            self.sp.transfer_playback(device_id=device_id, force_play=False)
-
+            if device_name:
+                device_id = next((device["id"] for device in devices["devices"] if device["name"] == device_name), None)
+            else:
+                device_id = devices["devices"][0]["id"]
+            if device_id:
+                self.sp.transfer_playback(device_id=device_id, force_play=False)
+                time.sleep(2) # Wait for the device to become active
+        
     def set_repeat(self, state="track"):
         self.sp.repeat(state)
 
@@ -74,4 +82,3 @@ class SpotifyController:
             if playlist['name'].lower() == name.lower():
                 return playlist['uri']
         return None
-    

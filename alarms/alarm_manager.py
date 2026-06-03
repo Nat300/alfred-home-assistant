@@ -6,15 +6,16 @@ class AlarmManager:
     def __init__(self):
         self.__alarms = []
 
-    def create_alarm(self, waking_time : dt.time, sunrise_duration : int = 0, recurence : set[int] = set(), is_active : bool = True):
+    def create_alarm(self, waking_time : dt.time, name:str = "Unnamed Alarm", sunrise_duration : int = 0, recurence : set[int] = None, is_active : bool = True):
         """Creates a new alarm with the specified parameters and adds it to the list of handled alarms.
         Args:
             waking_time (dt.time): The time at which the user wants to wake up.
+            name (str): The name of the alarm.
             sunrise_duration (int, optional): The duration in minutes for the sunrise simulation. Defaults to 0.
             recurence (set[int], optional): A set of integers representing the days of the week on which the alarm should recur (0 for Monday, 6 for Sunday). Defaults to an empty set.
             is_active (bool, optional): Whether the alarm is active or not. Defaults to True.
         """
-        self.__alarms.append(Alarm(waking_time, sunrise_duration, recurence, is_active))
+        self.__alarms.append(Alarm(waking_time, name, sunrise_duration, recurence, is_active))
 
     def remove_alarm(self, alarm:Alarm):
         self.__alarms.remove(alarm)
@@ -30,7 +31,10 @@ class AlarmManager:
         """
         alarm.is_active = is_active
         if is_active:
+            print(f"Alarm activated: {alarm}")
             alarm.compute_next_trigger_dt()
+        else:
+            print(f"Alarm deactivated: {alarm}")
 
     def check_alarms(self, current_time: dt.datetime | None = None):
         """
@@ -38,13 +42,11 @@ class AlarmManager:
         Args:
             current_time (dt.datetime | None, optional): The time to check against the alarms. Defaults to the current datetime.
         """
+
         if current_time is None:
             current_time = dt.datetime.now()
 
         for alarm in self.__alarms:
-            if alarm.next_trigger_dt <= current_time:
-                if alarm.is_active:
-                    alarm.trigger()
-                else:
-                    alarm.compute_next_trigger_dt()
+            if alarm.is_active and alarm.next_trigger_dt <= current_time:
+                alarm.trigger()
 

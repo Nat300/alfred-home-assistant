@@ -2,23 +2,25 @@ import datetime as dt
 
 class Alarm:
 
-    def __init__(self, waking_time : dt.time, sunrise_duration : int = 0, recurence : set[int] = set(), is_active : bool = True):
+    def __init__(self, waking_time : dt.time, name:str = "Unnamed Alarm", sunrise_duration : int = 0, recurence : set[int] = None, is_active : bool = True):
         """
         Initializes an Alarm object with the specified waking time and optional sunrise duration, recurrence pattern, and active status.
         Args:
             waking_time (dt.time): The time at which the user wants to wake up.
+            name (str): The name of the alarm.
             sunrise_duration (int, optional): The duration in minutes for the sunrise simulation. Defaults to 0.
             recurence (set[int], optional): A set of integers representing the days of the week on which the alarm should recur (0 for Monday, 6 for Sunday). Defaults to an empty set.
             is_active (bool, optional): Whether the alarm is active or not. Defaults to True.
         """
         self.waking_time = waking_time
+        self.name = name
         self.sunrise_duration = dt.timedelta(minutes=sunrise_duration)
         self.recurence = recurence
         self.is_active = is_active
         self.compute_next_trigger_dt()
 
     def __str__(self):
-        return f"Alarm set for {self.waking_time} with sunrise duration of {self.sunrise_duration} minutes and recurence pattern of {self.recurence}"
+        return f"Alarm '{self.name}' set for {self.waking_time} with sunrise duration of {self.sunrise_duration} minutes and recurence pattern of {self.recurence}"
 
     def compute_next_trigger_dt(self):
         """
@@ -29,7 +31,7 @@ class Alarm:
 
         candidate_trigger = dt.datetime.combine(now.date(), trigger_time)
 
-        if self.recurence == set():
+        if self.recurence is None:
             if candidate_trigger < now:
                 self.next_trigger_dt = candidate_trigger + dt.timedelta(days=1)
             else:
@@ -51,7 +53,8 @@ class Alarm:
     def trigger(self):
         # Placeholder for actual alarm triggering logic (e.g., sound, notification)
         print(f"Alarm triggered: {self}")
-        if self.recurence == set():
+        if self.recurence is None:
             self.is_active = False
+            print(f"Alarm deactivated: {self}")
         else:
             self.compute_next_trigger_dt()    
