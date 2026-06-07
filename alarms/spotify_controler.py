@@ -5,7 +5,12 @@ from dotenv import load_dotenv
 load_dotenv()
 
 class SpotifyController:
-    def __init__(self):
+    def __init__(self,default_device_name = None):
+        """
+        Initializes a SpotifyController object that can be used to control Spotify playback. It sets up the Spotify client using the Spotipy library and authenticates using the SpotifyOAuth method with credentials provided in environment variables. If a default device name is provided, it will be used for playback; otherwise, the first available device will be used.
+        Args:            default_device_name (str, optional): The name of the Spotify device to use for playback.
+        """
+        self.default_device_name = default_device_name
         client_id = os.getenv("client_id")
         client_secret = os.getenv("client_secret")
         redirect_uri = os.getenv("redirect_uri")
@@ -22,6 +27,9 @@ class SpotifyController:
     def play(self, artist=None, track=None, playlist=None, device_name=None):
         if device_name:
                 self.set_device_active(device_name)
+        elif self.default_device_name:
+                self.set_device_active(self.default_device_name)
+        time.sleep(2) # Wait for the device to become active
 
         try:
             if playlist:

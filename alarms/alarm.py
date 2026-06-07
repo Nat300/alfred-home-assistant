@@ -2,7 +2,7 @@ import datetime as dt
 
 class Alarm:
 
-    def __init__(self, waking_time : dt.time, name:str = "Unnamed Alarm", sunrise_duration : int = 0, recurence : set[int] = None, is_active : bool = True):
+    def __init__(self, waking_time : dt.time, name:str = "Unnamed Alarm", sunrise_duration : int = 0, recurence : set[int] = None, is_active : bool = True, sound: dict[str, str] = None):
         """
         Initializes an Alarm object with the specified waking time and optional sunrise duration, recurrence pattern, and active status.
         Args:
@@ -11,12 +11,14 @@ class Alarm:
             sunrise_duration (int, optional): The duration in minutes for the sunrise simulation. Defaults to 0.
             recurence (set[int], optional): A set of integers representing the days of the week on which the alarm should recur (0 for Monday, 6 for Sunday). Defaults to an empty set.
             is_active (bool, optional): Whether the alarm is active or not. Defaults to True.
+            sound (dict[str, str], optional): A dictionary containing sound settings for the alarm. Defaults to None. None will play the default alarm sound, while a dictionary with the key "track", "artist" or "playlist" will play the corresponding spotify track, artist or playlist. The value of the key should be the name of the track, artist or playlist to play.
         """
         self.waking_time = waking_time
         self.name = name
         self.sunrise_duration = dt.timedelta(minutes=sunrise_duration)
         self.recurence = recurence
         self.is_active = is_active
+        self.sound = sound
         self.compute_next_trigger_dt()
 
     def __str__(self):
@@ -49,12 +51,3 @@ class Alarm:
                 self.next_trigger_dt = candidate_trigger
         
         print(f"Next trigger datetime for {self} is {self.next_trigger_dt}")
-
-    def trigger(self):
-        # Placeholder for actual alarm triggering logic (e.g., sound, notification)
-        print(f"Alarm triggered: {self}")
-        if self.recurence is None:
-            self.is_active = False
-            print(f"Alarm deactivated: {self}")
-        else:
-            self.compute_next_trigger_dt()    
