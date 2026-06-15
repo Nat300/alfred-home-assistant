@@ -1,4 +1,4 @@
-from alarms.alarm_manager import AlarmManager
+from RaspberryPi_files.alarms.alarm_manager import AlarmManager
 from datetime import time
 from time import sleep
 
