@@ -1,6 +1,8 @@
 from alarms.alarm import Alarm
 from alarms.spotify_controler import SpotifyController
+from bt_communication.bt_comm import BluetoothManager
 import datetime as dt
+import time
 
 class AlarmManager:
 
@@ -14,6 +16,14 @@ class AlarmManager:
         self.__alarms = []
         self.default_alarm_sound = default_alarm_sound
         self.spotify_controller = SpotifyController(default_device_name=default_spotify_device_name)
+        self.ble_manager = BluetoothManager()
+        self.max_sunrise_led = 60
+        self.first_led_color = (3, 0, 2, 0)
+        self.last_led_color = (50, 25, 0, 8)
+        self.led_color_deltas = tuple((self.last_led_color[i] - self.first_led_color[i]) for i in range(4))
+
+    def setup_ble(self):
+        self.ble_manager.connect(device_name="ESP32_LED")
 
     def create_alarm(self, waking_time : dt.time, name:str = "Unnamed Alarm", sunrise_duration : int = 0, recurence : set[int] = None, is_active : bool = True, sound: dict[str, str] | None = None):
         """Creates a new alarm with the specified parameters and adds it to the list of handled alarms.
@@ -32,7 +42,7 @@ class AlarmManager:
 
     def get_alarms(self):
         return self.__alarms
-    
+
     def set_active(self, alarm:Alarm, is_active: bool = True):
         """Sets the active status of the specified alarm.
         Args:
@@ -46,26 +56,49 @@ class AlarmManager:
         else:
             print(f"Alarm deactivated: {alarm}")
 
-    def check_alarms(self, current_time: dt.datetime | None = None):
+    def check_alarms(self):
         """
         Verifies if any alarms are due to trigger based on the current time. If an alarm's next trigger datetime is less than or equal to the current time, it triggers the alarm and recomputes its next trigger datetime.
-        Args:
-            current_time (dt.datetime | None, optional): The time to check against the alarms. Defaults to the current datetime.
         """
 
-        if current_time is None:
-            current_time = dt.datetime.now()
+        current_time = dt.datetime.now()
 
         for alarm in self.__alarms:
-            if alarm.is_active and alarm.next_trigger_dt <= current_time:
-                self.trigger_alarm(alarm)
+            if alarm.is_active:
+                if alarm.next_trigger_dt <= current_time:
+                    if alarm.sunrise_duration > dt.timedelta(0):
+                        print(f"Starting sunrise simulation for alarm: {alarm}")
+                        self.do_sunrise(alarm)
+                    else:
+                        print(f"Triggering alarm: {alarm}")
+                        self.trigger_alarm(alarm)
 
     def trigger_alarm(self, alarm:Alarm):
+        self.ble_manager.write_to_characteristic(f"{self.max_sunrise_led};{self.last_led_color[0]};{self.last_led_color[1]};{self.last_led_color[2]};{self.last_led_color[3]}",characteristic_uuid="abcd1234-ab12-cd34-ef56-1234567890ab")
         self.spotify_controller.play(**(alarm.sound if alarm.sound else self.default_alarm_sound)) # first chooses the dictionary to be used, the unpacks it into keyword arguments for the play function
         if alarm.recurence is None:
             alarm.is_active = False
             print(f"Alarm deactivated: {alarm}")
         else:
-            alarm.compute_next_trigger_dt()  
-        
+            alarm.compute_next_trigger_dt()
 
+    def do_sunrise(self, alarm: Alarm):
+        while True:
+            # if sunrise is over, trigger the alarm and stop
+            if dt.datetime.combine(dt.date.today(), alarm.waking_time) <= dt.datetime.now():
+                print(f"Triggering alarm: {alarm}")
+                self.trigger_alarm(alarm)
+                return
+
+            time_to_alarm = dt.datetime.combine(dt.date.today(), alarm.waking_time) - dt.datetime.now()
+            sunrise_progress = 1 - (time_to_alarm / alarm.sunrise_duration)
+            sunrise_progress = max(0.0, min(1.0, sunrise_progress))  # clamp between 0 and 1
+
+            print(f"Sunrise progress for {alarm} is {sunrise_progress:.2%} : {int(sunrise_progress * self.max_sunrise_led)}/{self.max_sunrise_led} LEDs")
+
+            self.ble_manager.write_to_characteristic(
+                f"{int(self.max_sunrise_led * sunrise_progress)};{int(self.first_led_color[0] + self.led_color_deltas[0] * sunrise_progress)};{int(self.first_led_color[1] + self.led_color_deltas[1] * sunrise_progress)};{int(self.first_led_color[2] + self.led_color_deltas[2] * sunrise_progress)};{int(self.first_led_color[3] + self.led_color_deltas[3] * sunrise_progress)}",
+                characteristic_uuid="abcd1234-ab12-cd34-ef56-1234567890ab"
+            )
+
+            time.sleep(1)  # wait 1 second between updates, then loop again

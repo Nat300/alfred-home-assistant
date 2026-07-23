@@ -1,3 +1,5 @@
+import random
+
 import spotipy,os,time
 from spotipy.oauth2 import SpotifyOAuth
 from dotenv import load_dotenv
@@ -26,8 +28,10 @@ class SpotifyController:
 
     def play(self, artist=None, track=None, playlist=None, device_name=None):
         if device_name:
+                self.ensure_device_available(device_name)
                 self.set_device_active(device_name)
         elif self.default_device_name:
+                self.ensure_device_available(self.default_device_name)
                 self.set_device_active(self.default_device_name)
         time.sleep(2) # Wait for the device to become active
 
@@ -59,7 +63,12 @@ class SpotifyController:
         self.sp.start_playback(uris=[track_uri])
 
     def play_playlist(self, playlist_uri):
-        self.sp.start_playback(context_uri=playlist_uri)
+        playlist_id = playlist_uri.split(":")[-1]
+        total_tracks = self.sp.playlist(playlist_id, fields="tracks.total")["tracks"]["total"]
+        random_position = random.randint(0, total_tracks - 1) #this is done so it selects a random track from the playlist, while making sure the position given is within the range of the total number of tracks in the playlist
+
+        self.sp.shuffle(True)
+        self.sp.start_playback(context_uri=playlist_uri, offset={"position": random_position})
 
     def play_artist(self, artist_uri):
         self.sp.start_playback(context_uri=artist_uri)
@@ -90,3 +99,17 @@ class SpotifyController:
             if playlist['name'].lower() == name.lower():
                 return playlist['uri']
         return None
+    
+    def restart_raspotify(self):
+        import subprocess
+        subprocess.run(["sudo", "systemctl", "restart", "raspotify"],check=True)
+
+    def ensure_device_available(self,device_name: str, retries: int = 2):
+        for attempt in range(retries):
+            devices = self.sp.devices()["devices"]
+            for d in devices:
+                if d["name"] == device_name:
+                    return d["id"]  # found it, no restart needed
+            print(f"Device not found (attempt {attempt + 1}), restarting raspotify...")
+            self.restart_raspotify()
+        raise RuntimeError(f"Could not find Spotify device '{device_name}' after {retries} restarts")
